@@ -1,0 +1,20 @@
+name: diffusion
+use_mask: ${use_mask_encoder}
+condition: true
+decoder:
+  layer_name: EncDecoder
+  d_model: ${embed_dim}
+  n_heads: 8
+  n_enc_layers: 2
+  n_dec_layers: 2
+  n_landmarks: ${num_joints}
+  transformer_dim_feedforward: 1024
+  ldmks_dim: 2
+  dropout: 0.1
+  uncertainty: true
+  inpainting: ${leq:${ldmk_prompt_prob},0.0}
+diffusion:
+  noise_schedule: cosine
+  sigma_small: true
+  num_steps: 1000
+  timestep_respacing_eval: ddim5

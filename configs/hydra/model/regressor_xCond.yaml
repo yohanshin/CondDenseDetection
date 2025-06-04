@@ -1,0 +1,14 @@
+name: regressor_xCond
+use_mask: ${use_mask_encoder}
+condition: false
+decoder:
+  layer_name: DETRDecoder
+  d_model: ${embed_dim}
+  n_heads: 8
+  n_layers: 6
+  n_landmarks: ${num_joints}
+  transformer_dim_feedforward: 2048
+  ldmks_dim: 2
+  dropout: 0.1
+  uncertainty: true
+  condition: ${condition}
