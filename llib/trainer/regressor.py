@@ -33,6 +33,18 @@ class DensLnmkRegressor(BaseTrainer):
         self.validation_outputs = []
         self.show_results = dict(images=[], preds=[], targets=[])
 
+    def _forward(self, x, cond=None, cond_mask=None):
+        features = self.backbone(x)
+        pred = self.decoder(features, self.backbone.pos_embed, cond=cond, cond_mask=cond_mask)
+        
+        joints2d = pred["joints2d"][..., :2]
+        sigma = pred["joints2d"][..., -1:]
+        conf = 1.0 / (sigma ** 2 + 1)
+
+        pred["joints2d"] = joints2d
+        pred["conf"] = conf
+        return pred
+    
     def forward(self, x, cond=None, cond_mask=None):
         features = self.backbone(x)
         pred = self.decoder(features, self.backbone.pos_embed, cond=cond, cond_mask=cond_mask)

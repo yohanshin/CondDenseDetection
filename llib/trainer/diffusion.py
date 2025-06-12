@@ -1,7 +1,7 @@
 import os
 
 import torch
-import torch.distributed as dist
+from einops import rearrange
 from .base_trainer import BaseTrainer
 from ..models.backbone.vit import ViT
 from ..models.losses import JointGNLLLoss
@@ -47,6 +47,48 @@ class DensLnmkDiffusion(BaseTrainer):
         self.viz_dir = viz_dir
         self.validation_outputs = []
         self.show_results = dict(images=[], preds=[], targets=[])
+
+    def _forward(self, x, cond=None, cond_mask=None, prompt=None, n_samples=16):
+        batch = dict()
+        features = self.backbone(x)
+
+        bs = features.size(0)
+        repr = torch.zeros(bs, self.decoder.decoder.n_landmarks, 2, dtype=features.dtype, device=features.device)
+        if prompt is None:
+            mask_bits = torch.zeros(bs, self.decoder.decoder.n_landmarks).long()
+        
+        batch["features"] = features
+        batch["pos_embed"] = self.backbone.pos_embed
+        batch["cond"] = cond
+        batch["cond_mask"] = cond_mask
+        batch["mask_bits"] = mask_bits
+        batch["repr_clean"] = repr
+        
+        # To device
+        for k, v in batch.items():
+            batch[k] = v.to(device=features.device)
+        
+        # Make multiple samples if needed
+        if n_samples != 1:
+            for k, v in batch.items():
+                if k == "pos_embed": continue
+                stacked_v = v.unsqueeze(0).repeat_interleave(n_samples, dim=0)
+                batch[k] = stacked_v.reshape(bs * n_samples, *stacked_v.shape[2:])
+        
+        pred = self.decoder(batch)
+        joints2d = pred["joints2d"][..., :2]
+        sigma = pred["joints2d"][..., -1:]
+        if n_samples != 1:
+            joints2d = joints2d.reshape(n_samples, bs, *joints2d.shape[1:])
+            sigma = sigma.reshape(n_samples, bs, *sigma.shape[1:])
+            conf = 1.0 / (sigma ** 2 + 1)
+            normalized_conf = conf / conf.sum(0, keepdims=True)
+            
+            mean_joints2d = (joints2d * normalized_conf).sum(0)
+            pred["joints2d"] = mean_joints2d
+            pred["conf"] = conf.mean(0)
+        
+        return pred
 
     def forward(self, x, batch):
         features = self.backbone(x)

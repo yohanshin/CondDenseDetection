@@ -59,5 +59,9 @@ validate: True
 
 autoscale_lr: True # automatically scale lr with the number of gpus
 
+# Demo setting
+image_path: ""
+use_detection: False
+
 dist_params:
   ...

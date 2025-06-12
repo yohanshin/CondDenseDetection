@@ -35,6 +35,7 @@ def main(cfg: DictConfig):
     OmegaConf.register_new_resolver("if", lambda x, y, z: y if x else z)
     OmegaConf.register_new_resolver("div", lambda x, y: x // y)
     OmegaConf.register_new_resolver("eq", lambda a, b: a == b)
+    OmegaConf.register_new_resolver("leq", lambda a, b: a >= b)
     OmegaConf.register_new_resolver("concat", lambda x: np.concatenate(x))
     OmegaConf.register_new_resolver("sorted", lambda x: np.argsort(x))
 
@@ -105,6 +106,7 @@ def main(cfg: DictConfig):
             cv2.rectangle(cvimg, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color=(0, 0, 255), thickness=3)
 
             # Visualize prediction
+            radius = max(int(1.5 * scale), 1)
             for xy in pred_joints2d:
                 x = int(xy[0])
                 y = int(xy[1])

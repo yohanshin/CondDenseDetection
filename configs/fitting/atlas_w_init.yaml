@@ -1,0 +1,33 @@
+"general": {
+  "use_vitpose": False,
+  "lod": smplx
+}
+
+
+"optim_kwargs": {
+  "body": {
+  "optim_type": "adam",
+  "lr": 0.003,
+  "num_steps": 1000,},
+  
+  "all": {
+  "optim_type": "adam",
+  "lr": 0.001,
+  "num_steps": 1000,}
+}
+
+"loss_weights": {
+  "body": {
+  "joints2d": 5.0,
+  "regularize": 0.3,
+  "pose_prior": 0.02,
+  "shape_prior": 0.04
+  },
+  
+  "all": {
+  "joints2d": 5.0,
+  "regularize": 0.3,
+  "pose_prior": 0.02,
+  "shape_prior": 0.04
+  },
+}

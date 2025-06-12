@@ -77,7 +77,9 @@ def main(cfg: DictConfig):
     )
 
     experiment_loggers.append(tb_logger)
-    wandb_logger = WandbLogger(project="CondDenseDetection")
+    project_name = "Debug" if cfg.debug_mode else "CondDenseDetection"
+    wandb_logger = WandbLogger(project=project_name, 
+                               tags=[exp_name])
     wandb_logger.log_hyperparams(omegaconf.OmegaConf.to_container(
         cfg, resolve=True, throw_on_missing=True
     ))

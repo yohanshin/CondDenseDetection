@@ -111,6 +111,7 @@ class EncDecPerLandmark(nn.Module):
 
         self.condition = condition
         self.inpainting = inpainting
+        self.n_landmarks = n_landmarks
         assert self.condition, "This architecture always assumes the conditioning!"
         
         self.output_dim = ldmks_dim+1 if uncertainty else ldmks_dim

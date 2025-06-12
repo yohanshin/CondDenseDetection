@@ -21,14 +21,11 @@ from configs import constants as _C
 from runs.tools import util_fn
 from runs.tools.registry import load_checkpoint, load_model
 
-DATA_DIR = "/large_experiments/3po/data/images/hr-lspet"
-VITPOSE_DIR = "/checkpoint/soyongshin/results/keypoints_detection/lspe"
-RESULTS_DIR = "/checkpoint/soyongshin/results/CondDenseDetection/lspet"
+RESULTS_DIR = "examples/out"
 
-aspect_ratio = 3/4
+aspect_ratio = 4/3
 pixel_std = 200
 scale_factor = 1.0
-
 CUR_PATH = os.getcwd()
 @hydra.main(version_base=None, config_path=os.path.join(CUR_PATH, "configs/hydra"), config_name="config.yaml")
 def main(cfg: DictConfig):
@@ -50,45 +47,28 @@ def main(cfg: DictConfig):
     model = load_checkpoint(model, ckpt_dir)
     model.eval()
 
-    # Inference preparation
-    annots = scipy.io.loadmat(os.path.join(DATA_DIR, "joints.mat"))
-    joints_list = annots['joints'].transpose(2, 0, 1)
-    image_pth_list = sorted(glob(os.path.join(DATA_DIR, "*.png")))
+    if os.path.isdir(cfg.image_path):
+        pass
+    elif os.path.exists(cfg.image_path):
+        image_path_list = [cfg.image_path]
+    else:
+        NotImplementedError, "No such file exists !"
+    
     results_dir = os.path.join(RESULTS_DIR, cfg.exp_name)
-    os.makedirs(results_dir, exist_ok=True)
-
-    # Target
-    # target_idxs = ["im08386", "im08783", "im00897", "im08085", "im01621", "im03244", "im02331", "im03950"]
-    target_idxs = ["im08783"]
-
-    for joint, image_pth in (pbar := tqdm(zip(joints_list, image_pth_list), total=len(joints_list), dynamic_ncols=True)):
-        if target_idxs != []:
-            if not image_pth.split("/")[-1].split(".")[0] in target_idxs:
-                continue
-        
-        cvimg = cv2.imread(image_pth)
+    for image_path in image_path_list:
+        cvimg = cv2.imread(image_path)
         cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
-        img_size = cvimg.shape[:2]
-        xyxy, valid = util_fn.kp2xyxy(joint[None], img_size, aspect_ratio=aspect_ratio)
+        
+        if cfg.use_detection:
+            pass
+        else:
+            xyxy = np.array([0, 0, cvimg.shape[1], cvimg.shape[0]]).astype(float)
+            # xyxy = np.array([-cvimg.shape[1], -cvimg.shape[1], 2 * cvimg.shape[1], 2 * cvimg.shape[0]]).astype(float)
 
-        if isinstance(valid, bool):
-            continue
-
-        base_name = os.path.basename(image_pth).replace(".png", ".data.pyd")
-        vitpose_pth = os.path.join(VITPOSE_DIR, base_name)
-        vitpose = joblib.load(vitpose_pth)[0]['joints2d']
-        vitpose = vitpose[:23]
-        cond_mask = vitpose[..., -1] < 0.3
-        cond = vitpose[:, :2]
-
-        # Prepare input
-        center, scale = util_fn.xyxy2cs(xyxy[0], aspect_ratio, pixel_std=200.0, scale_factor=1.0)
+        center, scale = util_fn.xyxy2cs(xyxy, aspect_ratio, pixel_std=200.0, scale_factor=1.0)
+        scale = scale.max()
         img_tensor = util_fn.process_cvimg(cvimg.copy(), center, scale, cfg.image_size)
         img_tensor = torch.from_numpy(img_tensor).float().to(device)
-        cond = util_fn.process_cond(cond, center, scale, cfg.image_size)
-        
-        cond_mask = torch.from_numpy(cond_mask).unsqueeze(0).bool().to(device)
-        cond = torch.from_numpy(cond).unsqueeze(0).float().to(device)
         
         with torch.no_grad():
             if "diffusion" in cfg.model.name:
@@ -103,16 +83,13 @@ def main(cfg: DictConfig):
             pred_joints2d = np.concatenate((pred_joints2d, np.ones_like(pred_joints2d[..., :1])), axis=-1)
             
         pred_joints2d = util_fn.convert_kps_to_full_img(pred_joints2d, center, scale, cfg.image_size)
-        
-        # Visualize prediction
         for xy in pred_joints2d:
             x = int(xy[0])
             y = int(xy[1])
             cv2.circle(cvimg, (x, y), radius=2, color=(0, 255, 0), thickness=-1)
 
-        cvimg = cv2.cvtColor(cvimg, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(results_dir, os.path.basename(image_pth)), cvimg)
-        pbar.update(1)
+        import pdb; pdb.set_trace()
+        cv2.imwrite("test.png", cvimg[..., ::-1])
 
 if __name__ == '__main__':
     main()

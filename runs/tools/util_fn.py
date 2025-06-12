@@ -23,6 +23,12 @@ def xyxy2cs(bbox, aspect_ratio, pixel_std, scale_factor=0.75):
 
     return center, scale
 
+def cs2xyxy(center, scale, pixel_std=200.0):
+    x1 = center[..., 0] - scale[..., 0] * pixel_std / 2.0
+    y1 = center[..., 1] - scale[..., 1] * pixel_std / 2.0
+    x2 = center[..., 0] + scale[..., 0] * pixel_std / 2.0
+    y2 = center[..., 1] + scale[..., 1] * pixel_std / 2.0
+    return np.stack((x1, y1, x2, y2), axis=-1)
 
 def kp2xyxy(kps, img_size, thresh=0.3, scale=1.2, min_vis_joints=6, aspect_ratio=4/3):
     if kps.shape[-1] == 2:
@@ -53,10 +59,10 @@ def kp2xyxy(kps, img_size, thresh=0.3, scale=1.2, min_vis_joints=6, aspect_ratio
     x2 = center[:, 0] + width / 2.0 * scale
     y2 = center[:, 1] + height / 2.0 * scale
     H, W = img_size
-    x1 = np.clip(x1, 0, W)
-    y1 = np.clip(y1, 0, H)
-    x2 = np.clip(x2, 0, W)
-    y2 = np.clip(y2, 0, H)
+    # x1 = np.clip(x1, 0, W)
+    # y1 = np.clip(y1, 0, H)
+    # x2 = np.clip(x2, 0, W)
+    # y2 = np.clip(y2, 0, H)
     bbox = np.stack((x1, y1, x2, y2), axis=-1)
     bbox_out[valid_frames] = bbox
     return bbox_out, valid_frames
@@ -78,7 +84,7 @@ def convert_cvimg_to_tensor(cvimg: np.array):
     return img
 
 
-def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0):
+def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0, frame=0):
     mean = 255 * np.array([0.485, 0.456, 0.406])
     std = 255 * np.array([0.229, 0.224, 0.225])
     
