@@ -88,7 +88,7 @@ class LossFunction(nn.Module):
         
         return loss
 
-    def smoothing_loss(self, verts, params):
+    def smoothing_loss(self, pred_verts, params):
         def smooth(est):
             "smooth body"
             interp = est.clone().detach()
@@ -96,11 +96,13 @@ class LossFunction(nn.Module):
             loss = funcl2(est[1:-1] - interp[1:-1])
             return loss/(est.shape[0] - 2)
         
-        smoothing_loss = 0
-        smoothing_loss += smooth(verts)
-        for key in ["global_trans", "global_rot", "body_pose_params", "hand_pose_params"]:
-            smoothing_loss += smooth(params[key])
-        return smoothing_loss
+        pred_ldmks_3d = torch.index_select(pred_verts, dim=1, index=self.verts_idxs)
+        return smooth(pred_ldmks_3d) * (pred_ldmks_3d.shape[0] - 2)
+        # smoothing_loss = 0
+        # smoothing_loss += smooth(pred_verts)
+        # for key in ["global_trans", "global_rot", "body_pose_params", "hand_pose_params"]:
+        #     smoothing_loss += smooth(params[key])
+        # return smoothing_loss
     
     def forward(self, 
                 pred_verts, 
@@ -146,10 +148,7 @@ class LossFunction(nn.Module):
         total_loss = sum(losses.values())
         self.loss_dict = {}
         for k, v in losses.items():
-            if k in ['shape_consist', 'smoothing']:
-                self.loss_dict[k] = f'{v.item():.1f}'
-            else:
-                self.loss_dict[k] = f'{v.item() / n_subj:.1f}'
+            self.loss_dict[k] = f'{v.item() / n_subj:.1f}'
         self.loss_per_subj = np.stack([v for v in losses_per_subj.values()], axis=-1).sum(-1)
         
         return total_loss

@@ -30,7 +30,7 @@ def cs2xyxy(center, scale, pixel_std=200.0):
     y2 = center[..., 1] + scale[..., 1] * pixel_std / 2.0
     return np.stack((x1, y1, x2, y2), axis=-1)
 
-def kp2xyxy(kps, img_size, thresh=0.3, scale=1.2, min_vis_joints=6, aspect_ratio=4/3):
+def kp2xyxy(kps, img_size=None, thresh=0.3, scale=1.2, min_vis_joints=6, aspect_ratio=4/3):
     if kps.shape[-1] == 2:
         mask = np.ones_like(kps[..., 0]).astype(bool)
     else:
@@ -58,7 +58,7 @@ def kp2xyxy(kps, img_size, thresh=0.3, scale=1.2, min_vis_joints=6, aspect_ratio
     y1 = center[:, 1] - height / 2.0 * scale
     x2 = center[:, 0] + width / 2.0 * scale
     y2 = center[:, 1] + height / 2.0 * scale
-    H, W = img_size
+    # H, W = img_size
     # x1 = np.clip(x1, 0, W)
     # y1 = np.clip(y1, 0, H)
     # x2 = np.clip(x2, 0, W)
@@ -84,7 +84,7 @@ def convert_cvimg_to_tensor(cvimg: np.array):
     return img
 
 
-def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0, frame=0):
+def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0, frame=0, transform_only=False):
     mean = 255 * np.array([0.485, 0.456, 0.406])
     std = 255 * np.array([0.229, 0.224, 0.225])
     
@@ -95,7 +95,10 @@ def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0, frame=0):
         (int(image_size[0]), int(image_size[1])),
         flags=cv2.INTER_LINEAR
     )
-
+    
+    if transform_only:
+        return image
+    
     image  = convert_cvimg_to_tensor(image)
     image = (image - mean[:, None, None]) / std[:, None, None]
     return image

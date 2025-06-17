@@ -74,7 +74,7 @@ class FittingFunction(object):
         for i in (pbar := tqdm(range(max_iters), 
                                desc='Fitting ...', 
                                dynamic_ncols=True, 
-                               leave=False)):
+                               leave=True)):
             loss = optimizer.step(closure)
 
             msg = f'Iter {i+1}  |  '

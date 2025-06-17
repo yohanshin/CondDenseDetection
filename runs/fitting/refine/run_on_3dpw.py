@@ -48,8 +48,8 @@ optim_kwargs = [
         "lw_pose": 0.02,
         "lw_shape": 0.004,
         "lw_shape": 0.004,
-        "lw_shape_consist": 0.1,
-        "lw_smoothing": 0.1,
+        "lw_shape_consist": 10.0,
+        "lw_smoothing": 100.0,
     },
 
     # Stage 2
@@ -67,8 +67,8 @@ optim_kwargs = [
         "lw_reg": 0.01,
         "lw_pose": 0.005,
         "lw_shape": 0.001,
-        "lw_shape_consist": 0.1,
-        "lw_smoothing": 0.1,
+        "lw_shape_consist": 10.0,
+        "lw_smoothing": 250.0,
     },
 ]
 

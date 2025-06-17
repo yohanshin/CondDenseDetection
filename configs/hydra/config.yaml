@@ -62,5 +62,9 @@ autoscale_lr: True # automatically scale lr with the number of gpus
 image_path: ""
 use_detection: False
 
+# Inference
+inference_n_parts: 1
+inference_mod: 0
+
 dist_params:
   ...
